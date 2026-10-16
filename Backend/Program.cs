@@ -11,8 +11,13 @@ const string AngularCorsPolicy = "Angular";
 var builder = WebApplication.CreateBuilder(args);
 
 // ---- Data ----
-var connectionString = builder.Configuration.GetConnectionString("FreightLook")
-    ?? throw new InvalidOperationException("Connection string 'FreightLook' is not configured.");
+// Not stored in appsettings: set it with user secrets (development) or the
+// ConnectionStrings__FreightLook environment variable (servers). See README.
+var connectionString = builder.Configuration.GetConnectionString("FreightLook");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException(
+        "Connection string 'FreightLook' is not configured. Run: dotnet user-secrets set \"ConnectionStrings:FreightLook\" \"<connection string>\" " +
+        "in the Backend folder, or set the ConnectionStrings__FreightLook environment variable.");
 builder.Services.AddSingleton<IDbConnectionFactory>(new SqlConnectionFactory(connectionString));
 builder.Services.AddScoped<IRateRepository, RateRepository>();
 builder.Services.AddScoped<IAirportRepository, AirportRepository>();

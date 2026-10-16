@@ -34,14 +34,22 @@ Creates the `FreightLook` database, tables, stored procedures and sample data. T
 
 **2. API**
 
-The connection string is `ConnectionStrings:FreightLook` in `Backend/appsettings.json` (default: LocalDB with Windows authentication). For other credentials, use user secrets or an environment variable rather than committing them:
+The connection string is **not stored in the repo**. Set it once with user secrets; they are kept in your user profile and loaded automatically in Development:
+
+```bat
+cd Backend
+dotnet user-secrets set "ConnectionStrings:FreightLook" "Server=(localdb)\MSSQLLocalDB;Database=FreightLook;Trusted_Connection=True;TrustServerCertificate=True"
+```
+
+On a server, use an environment variable instead:
 
 ```bat
 set ConnectionStrings__FreightLook=Server=...;Database=FreightLook;User Id=...;Password=...
 ```
 
+Then run the API:
+
 ```bat
-cd Backend
 dotnet run --launch-profile http
 ```
 
