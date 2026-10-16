@@ -1,0 +1,16 @@
+@Backend_HostAddress = http://localhost:5166
+
+GET {{Backend_HostAddress}}/api/airports
+Accept: application/json
+
+###
+
+GET {{Backend_HostAddress}}/api/rates/search?origin=BOM&destination=FRA&weight=320
+Accept: application/json
+
+###
+
+GET {{Backend_HostAddress}}/api/dashboard/stats
+Accept: application/json
+
+###

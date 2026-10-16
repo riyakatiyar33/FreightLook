@@ -1,0 +1,54 @@
+<mat-sidenav-container class="shell" autosize>
+  <mat-sidenav
+    #sidenav
+    class="sidenav"
+    [class.collapsed]="collapsed() && !isHandset()"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="!isHandset()">
+    <div class="brand">
+      <span class="brand-mark"><mat-icon>flight_takeoff</mat-icon></span>
+      <span class="brand-name">FreightLook</span>
+    </div>
+
+    <mat-nav-list class="nav">
+      @for (item of navItems; track item.path) {
+        <a
+          mat-list-item
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          #link="routerLinkActive"
+          [activated]="link.isActive"
+          [matTooltip]="collapsed() && !isHandset() ? item.label : ''"
+          matTooltipPosition="right"
+          (click)="closeIfHandset(sidenav)">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle class="nav-label">{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <div class="sidenav-footer">Air cargo rates</div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="main">
+    <mat-toolbar class="topbar">
+      <button mat-icon-button (click)="toggleNav(sidenav)" aria-label="Toggle navigation">
+        <mat-icon>{{ isHandset() || !collapsed() ? 'menu_open' : 'menu' }}</mat-icon>
+      </button>
+      <div class="titles">
+        <h1 class="page-title">{{ page().title }}</h1>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a routerLink="/dashboard">Home</a>
+          @for (crumb of page().breadcrumb; track $index; let last = $last) {
+            <mat-icon class="crumb-sep">chevron_right</mat-icon>
+            <span [class.current]="last">{{ crumb }}</span>
+          }
+        </nav>
+      </div>
+    </mat-toolbar>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

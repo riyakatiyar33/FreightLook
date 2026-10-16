@@ -1,0 +1,65 @@
+.shell { height: 100vh; background: var(--fl-bg); }
+
+/* ---- Sidebar ---- */
+.sidenav {
+  width: 240px;
+  border: none;
+  border-right: 1px solid var(--fl-border);
+  border-radius: 0;
+  background: var(--fl-nav-bg);
+  color: #fff;
+  transition: width 0.2s ease;
+  display: flex;
+}
+.sidenav ::ng-deep .mat-drawer-inner-container { display: flex; flex-direction: column; }
+.sidenav.collapsed { width: 68px; }
+
+.brand { display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 16px; white-space: nowrap; }
+.brand-mark {
+  display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 8px;
+  background: rgb(255 255 255 / 0.12);
+}
+.brand-name { font-size: 18px; font-weight: 700; letter-spacing: 0.2px; }
+
+.nav { padding: 8px; flex: 1; }
+.nav a {
+  --mat-list-list-item-label-text-color: rgb(255 255 255 / 0.82);
+  --mat-list-list-item-leading-icon-color: rgb(255 255 255 / 0.72);
+  --mat-list-list-item-hover-label-text-color: #fff;
+  --mat-list-list-item-hover-state-layer-color: #fff;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+.nav a.active {
+  --mat-list-list-item-label-text-color: #fff;
+  --mat-list-list-item-leading-icon-color: #fff;
+  background: rgb(255 255 255 / 0.14);
+}
+.nav-label { font-size: 14px; font-weight: 500; }
+
+.collapsed .brand-name,
+.collapsed .nav-label,
+.collapsed .sidenav-footer { display: none; }
+.collapsed .brand { padding: 0 16px; }
+
+.sidenav-footer { padding: 16px; font-size: 12px; color: rgb(255 255 255 / 0.5); white-space: nowrap; }
+
+/* ---- Header ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  height: 64px; gap: 8px; padding: 0 16px;
+  background: #fff; border-bottom: 1px solid var(--fl-border);
+}
+.titles { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.page-title { margin: 0; font-size: 18px; font-weight: 600; color: var(--fl-text); }
+.breadcrumb { display: flex; align-items: center; font-size: 12px; color: var(--fl-muted); }
+.breadcrumb a { color: var(--fl-muted); text-decoration: none; }
+.breadcrumb a:hover { color: var(--mat-sys-primary); }
+.breadcrumb .current { color: var(--fl-text); font-weight: 500; }
+.crumb-sep { font-size: 16px; width: 16px; height: 16px; }
+
+.content { padding: 20px 24px 32px; }
+
+@media (max-width: 599.98px) {
+  .content { padding: 12px; }
+}

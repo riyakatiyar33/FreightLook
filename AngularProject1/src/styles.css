@@ -1,0 +1,119 @@
+/* Angular Material (M3) base theme; brand colours, font and density are overridden below. */
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+html {
+  /* FreightLook palette */
+  --fl-primary: #1a3f8f;
+  --fl-bg: #f4f6f8;
+  --fl-nav-bg: #0f2557;
+  --fl-border: #e3e8ef;
+  --fl-text: #1d2939;
+  --fl-muted: #667085;
+  --fl-zebra: #f8fafc;
+  --fl-hover: #eef4ff;
+  --fl-highlight: #dfe9ff;
+  --fl-success: #027a48;
+  --fl-danger: #b42318;
+  --fl-warning: #b54708;
+
+  /* Material system tokens: deep blue primary, light surfaces */
+  --mat-sys-primary: var(--fl-primary);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #dbe5fb;
+  --mat-sys-on-primary-container: #0d2559;
+  --mat-sys-secondary-container: #e3e9f6;
+  --mat-sys-surface: #ffffff;
+  --mat-sys-surface-container-lowest: #ffffff;
+  --mat-sys-surface-container-low: #ffffff;
+  --mat-sys-surface-container: #ffffff;
+  --mat-sys-surface-container-high: #ffffff;
+  --mat-sys-on-surface: var(--fl-text);
+  --mat-sys-on-surface-variant: #475467;
+  --mat-sys-outline: #c4ccd8;
+  --mat-sys-outline-variant: var(--fl-border);
+
+  /* Typography: Inter, falling back to Roboto */
+  --fl-font: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --mat-sys-body-large-font: var(--fl-font);
+  --mat-sys-body-medium-font: var(--fl-font);
+  --mat-sys-body-small-font: var(--fl-font);
+  --mat-sys-label-large-font: var(--fl-font);
+  --mat-sys-label-medium-font: var(--fl-font);
+  --mat-sys-label-small-font: var(--fl-font);
+  --mat-sys-title-large-font: var(--fl-font);
+  --mat-sys-title-medium-font: var(--fl-font);
+  --mat-sys-title-small-font: var(--fl-font);
+  --mat-sys-headline-small-font: var(--fl-font);
+
+  /* Data-dense density */
+  --mat-form-field-container-height: 44px;
+  --mat-form-field-container-vertical-padding: 10px;
+  --mat-table-header-container-height: 40px;
+  --mat-table-row-item-container-height: 40px;
+  --mat-list-list-item-one-line-container-height: 44px;
+  --mat-paginator-container-size: 48px;
+  --mat-button-filled-container-shape: 8px;
+  --mat-button-outlined-container-shape: 8px;
+  --mat-button-text-container-shape: 8px;
+  --mat-card-elevated-container-shape: 8px;
+  --mat-card-outlined-container-shape: 8px;
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--fl-font);
+  font-size: 14px;
+  color: var(--fl-text);
+  background: var(--fl-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+[hidden] { display: none !important; }
+
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+/* ---- Page building blocks shared by all feature pages ---- */
+.page { display: flex; flex-direction: column; gap: 16px; max-width: 1680px; margin: 0 auto; }
+
+.fl-card.mat-mdc-card {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--fl-border);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 2px 8px rgb(16 24 40 / 0.06);
+  padding: 16px 20px;
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.card-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--fl-text); }
+.muted { color: var(--fl-muted); font-size: 13px; }
+.num { text-align: right !important; font-variant-numeric: tabular-nums; }
+
+/* Empty state */
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 48px 16px; color: var(--fl-muted); }
+.empty-state mat-icon { font-size: 44px; width: 44px; height: 44px; color: #98a2b3; }
+.empty-state h3 { margin: 4px 0 0; font-size: 15px; font-weight: 600; color: var(--fl-text); }
+.empty-state p { margin: 0; max-width: 420px; }
+
+/* Loading skeleton */
+.skeleton { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+.skeleton-bar {
+  height: 14px; border-radius: 4px;
+  background: linear-gradient(90deg, #eef1f5 25%, #e2e7ee 37%, #eef1f5 63%);
+  background-size: 400% 100%;
+  animation: fl-shimmer 1.4s ease infinite;
+}
+.skeleton-row { display: grid; grid-template-columns: 2fr repeat(8, 1fr); gap: 12px; }
+@keyframes fl-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* Snackbar + tooltip variants */
+.fl-snack-error {
+  --mat-snack-bar-container-color: var(--fl-danger);
+  --mat-snack-bar-supporting-text-color: #fff;
+  --mat-snack-bar-button-color: #fff;
+}
+.fl-snack-success {
+  --mat-snack-bar-container-color: var(--fl-success);
+  --mat-snack-bar-supporting-text-color: #fff;
+  --mat-snack-bar-button-color: #fff;
+}
+.fl-tooltip-multiline { white-space: pre-line; }

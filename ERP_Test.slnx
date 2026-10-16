@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="AngularProject1/AngularProject1.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="Backend/Backend.csproj" />
+  <Project Path="Data/Data.csproj" />
+  <Project Path="Models/Models.csproj" />
+  <Project Path="Service/Service.csproj" />
+</Solution>

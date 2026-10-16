@@ -1,0 +1,85 @@
+<section class="page">
+  <div class="kpi-grid">
+    @if (loading()) {
+      @for (i of [1, 2, 3, 4]; track i) {
+        <mat-card class="fl-card kpi">
+          <div class="skeleton">
+            <div class="skeleton-bar" style="width: 40%"></div>
+            <div class="skeleton-bar" style="width: 60%; height: 26px"></div>
+            <div class="skeleton-bar" style="width: 80%"></div>
+          </div>
+        </mat-card>
+      }
+    } @else if (stats(); as s) {
+      <mat-card class="fl-card kpi">
+        <div class="kpi-icon blue"><mat-icon>flight</mat-icon></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Airlines</span>
+          <span class="kpi-value">{{ s.airlineCount | number }}</span>
+          <span class="muted">with active rates</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="fl-card kpi">
+        <div class="kpi-icon teal"><mat-icon>alt_route</mat-icon></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Routes</span>
+          <span class="kpi-value">{{ s.routeCount | number }}</span>
+          <span class="muted">origin → destination pairs</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="fl-card kpi">
+        <div class="kpi-icon violet"><mat-icon>request_quote</mat-icon></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Rates</span>
+          <span class="kpi-value">{{ s.rateCount | number }}</span>
+          <span class="muted">active airline / commodity rates</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="fl-card kpi">
+        <div class="kpi-icon amber"><mat-icon>schedule</mat-icon></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Last upload</span>
+          @if (s.lastUploadAt) {
+            <span class="kpi-value small">{{ s.lastUploadAt | date: 'dd MMM yyyy, HH:mm' }}</span>
+            <span class="muted ellipsis" [title]="s.lastUploadFileName">
+              {{ s.lastUploadFileName }} · {{ s.lastUploadSavedCount }} saved
+            </span>
+          } @else {
+            <span class="kpi-value small">—</span>
+            <span class="muted">No rate sheet uploaded yet</span>
+          }
+        </div>
+      </mat-card>
+    } @else if (failed()) {
+      <mat-card class="fl-card kpi-error">
+        <div class="empty-state">
+          <mat-icon>cloud_off</mat-icon>
+          <h3>Could not load dashboard</h3>
+          <p>Check that the FreightLook API is running, then try again.</p>
+          <button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon>Retry</button>
+        </div>
+      </mat-card>
+    }
+  </div>
+
+  <div class="actions-grid">
+    <mat-card class="fl-card action">
+      <div class="card-header">
+        <h2 class="card-title">Find a rate</h2>
+      </div>
+      <p class="muted">Compare airline rates for a route, with slab prices, surcharges and an estimated total for your shipment weight.</p>
+      <a mat-flat-button routerLink="/rates"><mat-icon>travel_explore</mat-icon>Open Rate Search</a>
+    </mat-card>
+
+    <mat-card class="fl-card action">
+      <div class="card-header">
+        <h2 class="card-title">Load new rates</h2>
+      </div>
+      <p class="muted">Upload a rate sheet exported as a text PDF, Excel or CSV. New rates replace older ones and are searchable immediately.</p>
+      <a mat-stroked-button routerLink="/upload"><mat-icon>upload_file</mat-icon>Upload Rate Sheet</a>
+    </mat-card>
+  </div>
+</section>

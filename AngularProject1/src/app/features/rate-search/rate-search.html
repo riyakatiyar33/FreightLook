@@ -1,0 +1,194 @@
+<section class="page">
+  <!-- Filters -->
+  <mat-card class="fl-card">
+    <form class="filters" [formGroup]="form" (ngSubmit)="search()" novalidate>
+      <mat-form-field appearance="outline" class="airport">
+        <mat-label>From</mat-label>
+        <mat-icon matPrefix>flight_takeoff</mat-icon>
+        <input matInput formControlName="origin" [matAutocomplete]="originAuto" placeholder="Code or city"
+               autocomplete="off" spellcheck="false" />
+        <mat-autocomplete #originAuto="matAutocomplete" autoActiveFirstOption>
+          @for (airport of originOptions(); track airport.code) {
+            <mat-option [value]="airport.code">
+              <span class="opt-code">{{ airport.code }}</span>
+              <span class="opt-name">{{ airport.city ?? airport.name }}<span class="muted"> · {{ airport.name }}</span></span>
+            </mat-option>
+          }
+        </mat-autocomplete>
+        @if (form.controls.origin.hasError('required')) {
+          <mat-error>Origin is required</mat-error>
+        } @else if (form.controls.origin.hasError('pattern')) {
+          <mat-error>Use a 3-letter airport code</mat-error>
+        } @else {
+          <mat-hint>{{ originHint() }}</mat-hint>
+        }
+      </mat-form-field>
+
+      <button mat-icon-button type="button" class="swap" (click)="swap()"
+              matTooltip="Swap From and To" aria-label="Swap origin and destination">
+        <mat-icon>swap_horiz</mat-icon>
+      </button>
+
+      <mat-form-field appearance="outline" class="airport">
+        <mat-label>To</mat-label>
+        <mat-icon matPrefix>flight_land</mat-icon>
+        <input matInput formControlName="destination" [matAutocomplete]="destinationAuto" placeholder="Code or city"
+               autocomplete="off" spellcheck="false" />
+        <mat-autocomplete #destinationAuto="matAutocomplete" autoActiveFirstOption>
+          @for (airport of destinationOptions(); track airport.code) {
+            <mat-option [value]="airport.code">
+              <span class="opt-code">{{ airport.code }}</span>
+              <span class="opt-name">{{ airport.city ?? airport.name }}<span class="muted"> · {{ airport.name }}</span></span>
+            </mat-option>
+          }
+        </mat-autocomplete>
+        @if (form.controls.destination.hasError('required')) {
+          <mat-error>Destination is required</mat-error>
+        } @else if (form.controls.destination.hasError('pattern')) {
+          <mat-error>Use a 3-letter airport code</mat-error>
+        } @else {
+          <mat-hint>{{ destinationHint() }}</mat-hint>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="weight">
+        <mat-label>Weight</mat-label>
+        <mat-icon matPrefix>scale</mat-icon>
+        <input matInput type="number" formControlName="weight" min="0" step="0.01" placeholder="Optional" />
+        <span matTextSuffix>kg</span>
+        @if (form.controls.weight.invalid) {
+          <mat-error>Enter 0.01 – 1,000,000 kg</mat-error>
+        } @else {
+          <mat-hint>Optional</mat-hint>
+        }
+      </mat-form-field>
+
+      <div class="buttons">
+        <button mat-flat-button type="submit" [disabled]="loading()">
+          <mat-icon>search</mat-icon>Search
+        </button>
+        <button mat-stroked-button type="button" (click)="reset()">
+          <mat-icon>restart_alt</mat-icon>Reset
+        </button>
+      </div>
+    </form>
+    @if (form.hasError('sameAirport') && form.touched) {
+      <div class="form-error"><mat-icon>error</mat-icon>From and To must be different airports.</div>
+    }
+  </mat-card>
+
+  <!-- Results -->
+  <mat-card class="fl-card results">
+    <div class="card-header">
+      <div class="title-line">
+        <h2 class="card-title">Rates</h2>
+        @if (lastQuery(); as q) {
+          <span class="muted">
+            {{ resultCount() }} result{{ resultCount() === 1 ? '' : 's' }} · {{ q.origin }} → {{ q.destination }}
+            @if (q.weight) { · {{ q.weight | number: '1.0-2' }} kg }
+          </span>
+        }
+      </div>
+      @if (lastQuery()?.weight && resultCount()) {
+        <span class="legend"><span class="swatch"></span>Applicable slab · sorted by estimated total</span>
+      }
+    </div>
+
+    @if (loading()) {
+      <div class="skeleton" aria-label="Loading rates">
+        @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+          <div class="skeleton-row">
+            @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
+              <div class="skeleton-bar"></div>
+            }
+          </div>
+        }
+      </div>
+    } @else if (!searched()) {
+      <div class="empty-state">
+        <mat-icon>travel_explore</mat-icon>
+        <h3>Search air cargo rates</h3>
+        <p>Choose an origin and destination. Add a weight to see the applicable slab and an estimated total for every airline.</p>
+      </div>
+    } @else if (resultCount() === 0) {
+      <div class="empty-state">
+        <mat-icon>search_off</mat-icon>
+        <h3>No rates found</h3>
+        <p>There are no active rates for {{ lastQuery()?.origin }} → {{ lastQuery()?.destination }}. Upload a rate sheet for this route.</p>
+        <a mat-stroked-button routerLink="/upload"><mat-icon>upload_file</mat-icon>Upload Rate Sheet</a>
+      </div>
+    }
+
+    <div class="table-scroll" [hidden]="loading() || resultCount() === 0">
+      <table mat-table [dataSource]="dataSource" matSort class="rate-table">
+        <ng-container matColumnDef="airline" sticky>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Airline</th>
+          <td mat-cell *matCellDef="let r"><app-airline-chip [code]="r.airlineCode" [name]="r.airlineName" /></td>
+        </ng-container>
+
+        <ng-container matColumnDef="commodity">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Commodity</th>
+          <td mat-cell *matCellDef="let r">
+            @if (r.commodity) { <span class="commodity">{{ r.commodity }}</span> } @else { <span class="muted">General</span> }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="origin">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Origin</th>
+          <td mat-cell *matCellDef="let r"><span class="code" [matTooltip]="r.originName">{{ r.originCode }}</span></td>
+        </ng-container>
+
+        <ng-container matColumnDef="destination">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Dest.</th>
+          <td mat-cell *matCellDef="let r"><span class="code" [matTooltip]="r.destinationName">{{ r.destinationCode }}</span></td>
+        </ng-container>
+
+        <ng-container matColumnDef="min">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="num">Min</th>
+          <td mat-cell *matCellDef="let r" class="num"><span class="ccy">{{ r.currency }}</span> {{ r.minimumCharge | number: '1.0-2' }}</td>
+        </ng-container>
+
+        @for (slab of slabCodes; track slab) {
+          <ng-container [matColumnDef]="slabColumn(slab)">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="num slab-head">{{ slab }}</th>
+            <td mat-cell *matCellDef="let r" class="num slab" [class.applicable]="r.applicableSlab === slab">
+              {{ r.slabs[slab] != null ? (r.slabs[slab] | number: '1.2-3') : '—' }}
+            </td>
+          </ng-container>
+        }
+
+        @for (column of surchargeColumns; track column.id) {
+          <ng-container [matColumnDef]="column.id">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="num">{{ column.label }}</th>
+            <td mat-cell *matCellDef="let r" class="num charge">
+              @for (line of r.charges[column.id]; track $index) {
+                <div>{{ line.text }}@if (line.min) {<span class="min">{{ line.min }}</span>}</div>
+              } @empty {
+                <span class="muted">—</span>
+              }
+            </td>
+          </ng-container>
+        }
+
+        <ng-container matColumnDef="total" stickyEnd>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="num">Est. Total</th>
+          <td mat-cell *matCellDef="let r" class="num total">
+            @if (r.estimatedTotal != null) {
+              <span [matTooltip]="r.breakdown" matTooltipClass="fl-tooltip-multiline">
+                <span class="ccy">{{ r.currency }}</span> {{ r.estimatedTotal | number: '1.2-2' }}
+              </span>
+            } @else {
+              <span class="muted" matTooltip="Enter a weight to estimate">—</span>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    </div>
+
+    <mat-paginator [hidden]="loading() || resultCount() === 0" [pageSizeOptions]="[10, 25, 50, 100]" [pageSize]="25"
+                   showFirstLastButtons aria-label="Select page of rates" />
+  </mat-card>
+</section>

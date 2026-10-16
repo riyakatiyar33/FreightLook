@@ -1,0 +1,29 @@
+# ---- .NET / Visual Studio ----
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.rsuser
+TestResults/
+*.log
+
+# Local overrides that may contain secrets
+appsettings.*.local.json
+secrets.json
+
+# ---- Angular / Node ----
+node_modules/
+AngularProject1/dist/
+AngularProject1/.angular/
+AngularProject1/out-tsc/
+npm-debug.log*
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+.idea/
+
+# ---- Source rate sheets (real carrier data with third-party contact details) ----
+# Synthetic samples for testing live in Database/Samples.
+/*-ratelist.pdf

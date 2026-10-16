@@ -1,0 +1,155 @@
+<section class="page upload-page">
+  <div class="layout">
+    <!-- Upload -->
+    <mat-card class="fl-card">
+      <div class="card-header">
+        <h2 class="card-title">Rate sheet file</h2>
+        <span class="muted">PDF (text) · XLSX · XLS · CSV · max {{ maxMb }} MB</span>
+      </div>
+
+      <div
+        class="dropzone"
+        role="button"
+        tabindex="0"
+        [class.over]="dragOver()"
+        [class.disabled]="busy()"
+        [class.invalid]="fileError()"
+        (click)="browse()"
+        (keydown.enter)="browse()"
+        (keydown.space)="$event.preventDefault(); browse()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="dragOver.set(false)"
+        (drop)="onDrop($event)"
+        aria-label="Choose or drop a rate sheet file">
+        <mat-icon class="drop-icon">cloud_upload</mat-icon>
+        <div class="drop-title">Drag &amp; drop a rate sheet here</div>
+        <div class="muted">or <span class="link">browse your computer</span></div>
+        <input #fileInput type="file" hidden [accept]="accept" (change)="onFileInput($event)" />
+      </div>
+
+      @if (fileError(); as error) {
+        <div class="message error"><mat-icon>error</mat-icon>{{ error }}</div>
+      }
+
+      @if (file(); as f) {
+        <div class="file-row">
+          <mat-icon class="file-icon">{{ f.name.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'table_view' }}</mat-icon>
+          <div class="file-meta">
+            <span class="file-name" [title]="f.name">{{ f.name }}</span>
+            <span class="muted">{{ formatSize(f.size) }}</span>
+          </div>
+          @if (!busy()) {
+            <button mat-icon-button (click)="clearFile()" matTooltip="Remove file" aria-label="Remove file">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+      }
+
+      @if (busy()) {
+        <div class="progress">
+          <div class="progress-label">
+            <span>{{ phase() === 'uploading' ? 'Uploading… ' + progress() + '%' : 'Reading rates and saving…' }}</span>
+            <button mat-button type="button" (click)="cancel()">Cancel</button>
+          </div>
+          <mat-progress-bar [mode]="phase() === 'uploading' ? 'determinate' : 'indeterminate'" [value]="progress()" />
+        </div>
+      }
+
+      @if (serverError(); as error) {
+        <div class="message error"><mat-icon>error</mat-icon>{{ error }}</div>
+      }
+
+      <div class="actions">
+        <button mat-flat-button [disabled]="!file() || busy()" (click)="upload()">
+          <mat-icon>upload</mat-icon>Upload &amp; extract
+        </button>
+        <a mat-stroked-button routerLink="/rates"><mat-icon>travel_explore</mat-icon>Rate Search</a>
+      </div>
+    </mat-card>
+
+    <!-- Help -->
+    <mat-card class="fl-card help">
+      <h2 class="card-title">How it works</h2>
+      <ol>
+        <li>Export the rate sheet from your source system as a <strong>text PDF</strong> or <strong>Excel / CSV</strong>.</li>
+        <li>Columns are matched by header name: <em>Loc, Airline, Cd, scr, Crny, Min., Normal, +45 … +1000, FSC, SSC, Xray, Misc, CTG, Ams</em>.</li>
+        <li>Destination and currency are read from the <em>Destination :</em> and <em>Currency :</em> lines above the table.</li>
+        <li>Each valid row replaces the older rate for the same airline, route and commodity, and is searchable immediately.</li>
+      </ol>
+      <div class="message info">
+        <mat-icon>info</mat-icon>
+        Scanned or image-only PDFs can’t be read. Export a text PDF or a spreadsheet instead.
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- Result summary -->
+  @if (result(); as r) {
+    <mat-card class="fl-card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Upload result</h2>
+          <span class="muted">{{ r.fileName }}</span>
+        </div>
+        <div class="actions">
+          <button mat-flat-button [disabled]="!r.saved" (click)="goToSearch()">
+            <mat-icon>travel_explore</mat-icon>View in Rate Search
+          </button>
+          <button mat-stroked-button (click)="startOver()"><mat-icon>add</mat-icon>Upload another</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span class="stat-value">{{ r.parsed }}</span><span class="stat-label">Parsed</span></div>
+        <div class="stat success"><span class="stat-value">{{ r.saved }}</span><span class="stat-label">Saved</span></div>
+        <div class="stat danger"><span class="stat-value">{{ r.rejected }}</span><span class="stat-label">Rejected</span></div>
+        <div class="stat warning"><span class="stat-value">{{ r.warnings.length }}</span><span class="stat-label">Warnings</span></div>
+      </div>
+
+      @if (savedRoutes().length) {
+        <div class="routes">
+          <span class="muted">Routes updated:</span>
+          @for (route of savedRoutes(); track route) {
+            <button mat-stroked-button class="route-btn" (click)="goToSearch(route)" matTooltip="Search this route">
+              {{ route.replace('-', ' → ') }}
+            </button>
+          }
+        </div>
+      }
+
+      <mat-accordion multi displayMode="flat" class="details">
+        @if (r.errors.length) {
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title><mat-icon class="danger-icon">cancel</mat-icon>Errors ({{ r.errors.length }})</mat-panel-title>
+            </mat-expansion-panel-header>
+            <ul class="issues">
+              @for (error of r.errors; track $index) { <li>{{ error }}</li> }
+            </ul>
+          </mat-expansion-panel>
+        }
+        @if (r.warnings.length) {
+          <mat-expansion-panel [expanded]="!r.errors.length">
+            <mat-expansion-panel-header>
+              <mat-panel-title><mat-icon class="warning-icon">warning</mat-icon>Warnings ({{ r.warnings.length }})</mat-panel-title>
+            </mat-expansion-panel-header>
+            <ul class="issues">
+              @for (warning of r.warnings; track $index) { <li>{{ warning }}</li> }
+            </ul>
+          </mat-expansion-panel>
+        }
+        @if (r.savedRoutes.length) {
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title><mat-icon class="success-icon">check_circle</mat-icon>Saved rates ({{ r.savedRoutes.length }})</mat-panel-title>
+            </mat-expansion-panel-header>
+            <div class="saved-list">
+              @for (item of r.savedRoutes; track $index) { <span class="saved-item">{{ item }}</span> }
+            </div>
+          </mat-expansion-panel>
+        }
+      </mat-accordion>
+    </mat-card>
+  }
+</section>
