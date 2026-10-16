@@ -1,5 +1,6 @@
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace Data;
 
@@ -7,26 +8,10 @@ public sealed class SqlConnectionFactory : IDbConnectionFactory
 {
     private readonly string _connectionString;
 
-    public SqlConnectionFactory(string connectionString)
+    public SqlConnectionFactory(IConfiguration configuration)
     {
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new ArgumentException("Connection string is not configured.", nameof(connectionString));
-
-        _connectionString = connectionString;
+        _connectionString = configuration.GetConnectionString("FreightLook")!;
     }
 
-    public async Task<DbConnection> CreateOpenConnectionAsync(CancellationToken cancellationToken = default)
-    {
-        var connection = new SqlConnection(_connectionString);
-        try
-        {
-            await connection.OpenAsync(cancellationToken);
-            return connection;
-        }
-        catch
-        {
-            await connection.DisposeAsync();
-            throw;
-        }
-    }
+    public DbConnection CreateConnection() => new SqlConnection(_connectionString);
 }

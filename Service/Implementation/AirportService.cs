@@ -8,16 +8,16 @@ namespace Service.Implementation;
 
 public sealed class AirportService : IAirportService
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IDbConnectionFactory _dbConnectionFactory;
 
-    public AirportService(IDbConnectionFactory connectionFactory)
+    public AirportService(IDbConnectionFactory dbConnectionFactory)
     {
-        _connectionFactory = connectionFactory;
+        _dbConnectionFactory = dbConnectionFactory;
     }
 
     public async Task<IReadOnlyList<AirportDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var connection = _dbConnectionFactory.CreateConnection();
         var airports = await connection.QueryAsync<AirportDto>(new CommandDefinition(
             "dbo.usp_Airport_GetAll",
             commandType: CommandType.StoredProcedure,

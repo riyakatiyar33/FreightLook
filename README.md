@@ -8,12 +8,17 @@ Air cargo rate search. Upload airline rate sheets (text PDF, Excel or CSV) and c
 |---|---|
 | `Backend` | ASP.NET Core Web API: controllers, DI, CORS, Swagger, global exception handler |
 | `Service` | Business logic (rate search, slab resolver, upload validation, rate sheet extraction) and database calls with Dapper; **stored procedures only** |
-| `Data` | Connection factory (`IDbConnectionFactory` / `SqlConnectionFactory`) |
+| `Data` | `IDbConnectionFactory` / `SqlConnectionFactory`: reads the connection string and creates connections |
 | `Models` | Entities, DTOs, requests, responses |
 | `AngularProject1` | Angular 22 + Angular Material UI |
 | `Database` | SQL scripts and sample rate sheets (`Database/Samples`) |
 
-Request flow: `Controller → Service (Dapper → stored procedure) → SQL Server`. Controllers never touch the database; services get connections from `IDbConnectionFactory`.
+Request flow: `Controller → Service (Dapper → stored procedure) → SQL Server`. Controllers never touch the database. `SqlConnectionFactory` reads the connection string; each service injects `IDbConnectionFactory` and creates its connection with it:
+
+```csharp
+using var connection = _dbConnectionFactory.CreateConnection();
+var airports = await connection.QueryAsync<AirportDto>("dbo.usp_Airport_GetAll", commandType: CommandType.StoredProcedure);
+```
 
 ## Prerequisites
 

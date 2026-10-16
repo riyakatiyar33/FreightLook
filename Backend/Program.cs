@@ -8,15 +8,15 @@ const string AngularCorsPolicy = "Angular";
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---- Data ----
-// Not stored in appsettings: set it with user secrets (development) or the
-// ConnectionStrings__FreightLook environment variable (servers). See README.
-var connectionString = builder.Configuration.GetConnectionString("FreightLook");
-if (string.IsNullOrWhiteSpace(connectionString))
+// ---- Database ----
+// SqlConnectionFactory reads ConnectionStrings:FreightLook; services inject IDbConnectionFactory
+// and create their connection with it. The connection string is not stored in appsettings: set it with
+// user secrets (development) or the ConnectionStrings__FreightLook environment variable (servers).
+if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("FreightLook")))
     throw new InvalidOperationException(
         "Connection string 'FreightLook' is not configured. Run: dotnet user-secrets set \"ConnectionStrings:FreightLook\" \"<connection string>\" " +
         "in the Backend folder, or set the ConnectionStrings__FreightLook environment variable.");
-builder.Services.AddSingleton<IDbConnectionFactory>(new SqlConnectionFactory(connectionString));
+builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
 
 // ---- Services (business logic + Dapper stored procedure calls) ----
 builder.Services.AddSingleton<ISlabResolver, SlabResolver>();

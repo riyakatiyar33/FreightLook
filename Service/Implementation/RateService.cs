@@ -13,12 +13,12 @@ namespace Service.Implementation;
 
 public sealed class RateService : IRateService
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IDbConnectionFactory _dbConnectionFactory;
     private readonly ISlabResolver _slabResolver;
 
-    public RateService(IDbConnectionFactory connectionFactory, ISlabResolver slabResolver)
+    public RateService(IDbConnectionFactory dbConnectionFactory, ISlabResolver slabResolver)
     {
-        _connectionFactory = connectionFactory;
+        _dbConnectionFactory = dbConnectionFactory;
         _slabResolver = slabResolver;
     }
 
@@ -57,7 +57,7 @@ public sealed class RateService : IRateService
     /// </summary>
     private async Task<List<Rate>> LoadRatesAsync(string origin, string destination, CancellationToken cancellationToken)
     {
-        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var connection = _dbConnectionFactory.CreateConnection();
         using var grid = await connection.QueryMultipleAsync(new CommandDefinition(
             "dbo.usp_Rate_Search",
             new { Origin = origin, Destination = destination },

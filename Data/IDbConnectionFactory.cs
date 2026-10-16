@@ -4,6 +4,6 @@ namespace Data;
 
 public interface IDbConnectionFactory
 {
-    /// <summary>Creates and opens a new connection. The caller disposes it.</summary>
-    Task<DbConnection> CreateOpenConnectionAsync(CancellationToken cancellationToken = default);
+    /// <summary>Creates a new (closed) connection to the FreightLook database. The caller disposes it.</summary>
+    DbConnection CreateConnection();
 }

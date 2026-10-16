@@ -8,16 +8,16 @@ namespace Service.Implementation;
 
 public sealed class DashboardService : IDashboardService
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IDbConnectionFactory _dbConnectionFactory;
 
-    public DashboardService(IDbConnectionFactory connectionFactory)
+    public DashboardService(IDbConnectionFactory dbConnectionFactory)
     {
-        _connectionFactory = connectionFactory;
+        _dbConnectionFactory = dbConnectionFactory;
     }
 
     public async Task<DashboardStatsDto> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var connection = _dbConnectionFactory.CreateConnection();
         return await connection.QuerySingleAsync<DashboardStatsDto>(new CommandDefinition(
             "dbo.usp_Dashboard_GetStats",
             commandType: CommandType.StoredProcedure,

@@ -26,12 +26,12 @@ public sealed partial class UploadService : IUploadService
     };
 
     private readonly IExtractionService _extractionService;
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IDbConnectionFactory _dbConnectionFactory;
 
-    public UploadService(IExtractionService extractionService, IDbConnectionFactory connectionFactory)
+    public UploadService(IExtractionService extractionService, IDbConnectionFactory dbConnectionFactory)
     {
         _extractionService = extractionService;
-        _connectionFactory = connectionFactory;
+        _dbConnectionFactory = dbConnectionFactory;
     }
 
     public async Task<UploadResultResponse> UploadAsync(Stream content, string fileName, string contentType, long length, CancellationToken cancellationToken = default)
@@ -67,8 +67,10 @@ public sealed partial class UploadService : IUploadService
         if (extraction.Rates.Count == 0)
             response.Errors.Add("No rates could be found in the file.");
 
-        // One connection for the whole upload; each rate is still saved in its own transaction (inside the SP).
-        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        // One connection for the whole upload, opened once here (Dapper would otherwise open and close it
+        // for every row). Each rate is still saved in its own transaction inside usp_Rate_Insert.
+        using var connection = _dbConnectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
 
         for (var i = 0; i < extraction.Rates.Count; i++)
         {
