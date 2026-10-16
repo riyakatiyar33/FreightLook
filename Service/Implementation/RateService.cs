@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using Data.Repositories.Interfaces;
+using System.Data;
+using Dapper;
+using Data;
 using Models.Constants;
 using Models.Dtos;
 using Models.Entities;
@@ -11,12 +13,12 @@ namespace Service.Implementation;
 
 public sealed class RateService : IRateService
 {
-    private readonly IRateRepository _rateRepository;
+    private readonly IDbConnectionFactory _connectionFactory;
     private readonly ISlabResolver _slabResolver;
 
-    public RateService(IRateRepository rateRepository, ISlabResolver slabResolver)
+    public RateService(IDbConnectionFactory connectionFactory, ISlabResolver slabResolver)
     {
-        _rateRepository = rateRepository;
+        _connectionFactory = connectionFactory;
         _slabResolver = slabResolver;
     }
 
@@ -32,7 +34,7 @@ public sealed class RateService : IRateService
             throw new ValidationException("Weight must be greater than zero.");
 
         // Always hits the database (no caching) so freshly uploaded rates show up immediately.
-        var rates = await _rateRepository.SearchAsync(origin, destination, cancellationToken);
+        var rates = await LoadRatesAsync(origin, destination, cancellationToken);
 
         var results = rates.Select(rate => ToResult(rate, request.Weight)).ToList();
 
@@ -47,6 +49,32 @@ public sealed class RateService : IRateService
             Weight = request.Weight,
             Results = results
         };
+    }
+
+    /// <summary>
+    /// usp_Rate_Search returns three result sets (rates, slabs, surcharges);
+    /// slabs and surcharges are attached to their rate by RateId.
+    /// </summary>
+    private async Task<List<Rate>> LoadRatesAsync(string origin, string destination, CancellationToken cancellationToken)
+    {
+        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var grid = await connection.QueryMultipleAsync(new CommandDefinition(
+            "dbo.usp_Rate_Search",
+            new { Origin = origin, Destination = destination },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+
+        var rates = (await grid.ReadAsync<Rate>()).ToList();
+        var slabs = (await grid.ReadAsync<RateSlab>()).ToLookup(s => s.RateId);
+        var surcharges = (await grid.ReadAsync<Surcharge>()).ToLookup(s => s.RateId);
+
+        foreach (var rate in rates)
+        {
+            rate.Slabs = slabs[rate.RateId].ToList();
+            rate.Surcharges = surcharges[rate.RateId].ToList();
+        }
+
+        return rates;
     }
 
     private RateSearchResultDto ToResult(Rate rate, decimal? weight)

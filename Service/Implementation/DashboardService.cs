@@ -1,4 +1,6 @@
-using Data.Repositories.Interfaces;
+using System.Data;
+using Dapper;
+using Data;
 using Models.Dtos;
 using Service.Interface;
 
@@ -6,13 +8,19 @@ namespace Service.Implementation;
 
 public sealed class DashboardService : IDashboardService
 {
-    private readonly IDashboardRepository _dashboardRepository;
+    private readonly IDbConnectionFactory _connectionFactory;
 
-    public DashboardService(IDashboardRepository dashboardRepository)
+    public DashboardService(IDbConnectionFactory connectionFactory)
     {
-        _dashboardRepository = dashboardRepository;
+        _connectionFactory = connectionFactory;
     }
 
-    public Task<DashboardStatsDto> GetStatsAsync(CancellationToken cancellationToken = default) =>
-        _dashboardRepository.GetStatsAsync(cancellationToken);
+    public async Task<DashboardStatsDto> GetStatsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.QuerySingleAsync<DashboardStatsDto>(new CommandDefinition(
+            "dbo.usp_Dashboard_GetStats",
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+    }
 }

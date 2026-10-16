@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Data.Common;
 using System.Text.RegularExpressions;
-using Data.Repositories.Interfaces;
+using Dapper;
+using Data;
 using Models.Constants;
 using Models.Dtos;
 using Models.Entities;
@@ -24,17 +26,12 @@ public sealed partial class UploadService : IUploadService
     };
 
     private readonly IExtractionService _extractionService;
-    private readonly IRateRepository _rateRepository;
-    private readonly IRateSheetUploadRepository _uploadRepository;
+    private readonly IDbConnectionFactory _connectionFactory;
 
-    public UploadService(
-        IExtractionService extractionService,
-        IRateRepository rateRepository,
-        IRateSheetUploadRepository uploadRepository)
+    public UploadService(IExtractionService extractionService, IDbConnectionFactory connectionFactory)
     {
         _extractionService = extractionService;
-        _rateRepository = rateRepository;
-        _uploadRepository = uploadRepository;
+        _connectionFactory = connectionFactory;
     }
 
     public async Task<UploadResultResponse> UploadAsync(Stream content, string fileName, string contentType, long length, CancellationToken cancellationToken = default)
@@ -70,6 +67,9 @@ public sealed partial class UploadService : IUploadService
         if (extraction.Rates.Count == 0)
             response.Errors.Add("No rates could be found in the file.");
 
+        // One connection for the whole upload; each rate is still saved in its own transaction (inside the SP).
+        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+
         for (var i = 0; i < extraction.Rates.Count; i++)
         {
             var row = extraction.Rates[i];
@@ -85,7 +85,7 @@ public sealed partial class UploadService : IUploadService
 
             try
             {
-                await _rateRepository.InsertAsync(rate!, cancellationToken);
+                await InsertRateAsync(connection, rate!, cancellationToken);
                 response.Saved++;
                 response.SavedRoutes.Add(Describe(row));
             }
@@ -96,7 +96,7 @@ public sealed partial class UploadService : IUploadService
             }
         }
 
-        await _uploadRepository.InsertAsync(new RateSheetUpload
+        await InsertUploadLogAsync(connection, new RateSheetUpload
         {
             FileName = fileName,
             ParsedCount = response.Parsed,
@@ -106,6 +106,55 @@ public sealed partial class UploadService : IUploadService
 
         return response;
     }
+
+    /// <summary>
+    /// usp_Rate_Insert: saves the rate with its slabs and surcharges (passed as table-valued parameters)
+    /// and deactivates the previous rate for the same airline / route / commodity. Returns the new RateId.
+    /// </summary>
+    private static async Task<int> InsertRateAsync(DbConnection connection, Rate rate, CancellationToken cancellationToken)
+    {
+        var slabs = new DataTable();
+        slabs.Columns.Add("SlabCode", typeof(string));
+        slabs.Columns.Add("PricePerKg", typeof(decimal));
+        foreach (var slab in rate.Slabs)
+            slabs.Rows.Add(slab.SlabCode, slab.PricePerKg);
+
+        var surcharges = new DataTable();
+        surcharges.Columns.Add("SurchargeType", typeof(string));
+        surcharges.Columns.Add("Amount", typeof(decimal));
+        surcharges.Columns.Add("MinAmount", typeof(decimal));
+        surcharges.Columns.Add("Basis", typeof(string));
+        foreach (var surcharge in rate.Surcharges)
+            surcharges.Rows.Add(surcharge.SurchargeType, surcharge.Amount, (object?)surcharge.MinAmount ?? DBNull.Value, surcharge.Basis);
+
+        var parameters = new DynamicParameters();
+        parameters.Add("@AirlineCode", rate.AirlineCode);
+        parameters.Add("@AirlineName", string.IsNullOrWhiteSpace(rate.AirlineName) ? null : rate.AirlineName);
+        parameters.Add("@OriginCode", rate.OriginCode);
+        parameters.Add("@DestinationCode", rate.DestinationCode);
+        parameters.Add("@Commodity", rate.Commodity);
+        parameters.Add("@Currency", rate.Currency);
+        parameters.Add("@MinimumCharge", rate.MinimumCharge);
+        parameters.Add("@SourceFile", rate.SourceFile);
+        parameters.Add("@Slabs", slabs.AsTableValuedParameter("dbo.RateSlabTableType"));
+        parameters.Add("@Surcharges", surcharges.AsTableValuedParameter("dbo.SurchargeTableType"));
+        parameters.Add("@RateId", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            "dbo.usp_Rate_Insert", parameters,
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
+
+        return parameters.Get<int>("@RateId");
+    }
+
+    /// <summary>usp_RateSheetUpload_Insert: logs the upload (feeds the dashboard "last upload" card).</summary>
+    private static Task<int> InsertUploadLogAsync(DbConnection connection, RateSheetUpload upload, CancellationToken cancellationToken) =>
+        connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            "dbo.usp_RateSheetUpload_Insert",
+            new { upload.FileName, upload.ParsedCount, upload.SavedCount, upload.RejectedCount },
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken));
 
     /// <summary>Validates one extracted row and maps it to a <see cref="Rate"/>. Returns the list of problems.</summary>
     private static List<string> TryMap(ExtractedRateDto row, string fileName, out Rate? rate)

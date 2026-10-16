@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using Backend.Infrastructure;
 using Data;
-using Data.Repositories.Implementation;
-using Data.Repositories.Interfaces;
 using Service.Implementation;
 using Service.Interface;
 
@@ -19,12 +17,8 @@ if (string.IsNullOrWhiteSpace(connectionString))
         "Connection string 'FreightLook' is not configured. Run: dotnet user-secrets set \"ConnectionStrings:FreightLook\" \"<connection string>\" " +
         "in the Backend folder, or set the ConnectionStrings__FreightLook environment variable.");
 builder.Services.AddSingleton<IDbConnectionFactory>(new SqlConnectionFactory(connectionString));
-builder.Services.AddScoped<IRateRepository, RateRepository>();
-builder.Services.AddScoped<IAirportRepository, AirportRepository>();
-builder.Services.AddScoped<IRateSheetUploadRepository, RateSheetUploadRepository>();
-builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 
-// ---- Services ----
+// ---- Services (business logic + Dapper stored procedure calls) ----
 builder.Services.AddSingleton<ISlabResolver, SlabResolver>();
 builder.Services.AddScoped<IRateService, RateService>();
 builder.Services.AddScoped<IAirportService, AirportService>();

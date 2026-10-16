@@ -27,3 +27,6 @@ Thumbs.db
 # ---- Source rate sheets (real carrier data with third-party contact details) ----
 # Synthetic samples for testing live in Database/Samples.
 /*-ratelist.pdf
+
+# ---- Archives (local backups) ----
+*.zip
